@@ -69,7 +69,7 @@ class LogParser:
 
         self.logs = []
         self.lenlog = [len(self.logs)]
-        self.axes = defaultdict(lambda: [0] * (len(self.logs) - 1))
+        self.axes = defaultdict(lambda: [0] * (len(self.lenlog) - 1))
         self.axes['x'] = self.lenlog
 
     def add_log(self, log):
@@ -91,12 +91,12 @@ class LogParser:
         """
         self.lenlog.append(len(self.logs))
         try:
-            for personality, percentage in self.personality_report('\n'.join(self.logs)):
+            for personality, percentage in self.personality_report(self.logs[-1]):
                 self.axes[personality].append(percentage)
         except WatsonException as e:
             print("too short for personality scan")
 
-        for tone_id, score in self.tone_report('\n'.join(self.logs)):
+        for tone_id, score in self.tone_report(self.logs[-1]):
             self.axes[tone_id].append(score)
 
     def personality_report(self, text, tree=None):
