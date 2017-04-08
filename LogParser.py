@@ -10,6 +10,7 @@ import configparser
 from watson_developer_cloud import ToneAnalyzerV3
 
 def main():
+
     cparser = configparser.ConfigParser()
     cparser.read('config.ini')
 
@@ -19,7 +20,6 @@ def main():
     lp.single_reaction()
 
     print(lp.reaction)
-    # print(lp.personality_data)
 
 
 # personality_insights = PersonalityInsightsV2(
@@ -130,9 +130,11 @@ class LogParser:
         for branch in tree:
             if isinstance(tree[branch], list):
                 for twig in tree[branch]:
-                    for name, percentage in self.personality_report(None, twig):
+                    for name, percentage in self.tone_report(None, twig):
                         print("recursive call")
                         yield name, percentage
+            else:
+                print("not list")
 
     def single_reaction(self):
         """
@@ -146,7 +148,7 @@ class LogParser:
             reaction.append((tone_id, score))
 
         # Return highest magnitude of either tone or personality implied through the statement
-        self.reaction = sorted(reaction, key=lambda t: t[1])
+        self.reaction = sorted(reaction, key=lambda t: t[1], reverse=True)
 
 
 if __name__ == '__main__':
