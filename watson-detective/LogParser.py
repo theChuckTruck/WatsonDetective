@@ -62,7 +62,7 @@ class LogParser:
 
         self.logs = []
         self.lenlog = [len(self.logs)]
-        self.axes = defaultdict(lambda: [0])
+        self.axes = defaultdict(lambda: [0] * len(self.lenlog))
         self.axes['x'] = self.lenlog
 
     def add_log(self, log):
