@@ -19,7 +19,7 @@ def main():
 
     lp.add_log('Dude, what the hell?'*100)
     lp.watson_report_cumulative()
-    print(lp.axes())
+    print(lp.axes)
 
     # lp.single_reaction()
     #
@@ -61,10 +61,9 @@ class LogParser:
             password=initparser['decision']['password'])
 
         self.logs = []
-        self.personality_data = {}
-        self.tone_data = {}
-        self.lenlog = [0]
-        self.reaction = []
+        self.lenlog = [len(self.logs)]
+        self.axes = defaultdict(lambda: [0])
+        self.axes['x'] = self.lenlog
 
     def add_log(self, log):
         """
@@ -84,17 +83,11 @@ class LogParser:
         :return: 
         """
         self.lenlog.append(len(self.logs))
-        personality_reports = {self.lenlog[-1]: {}}
         for personality, percentage in self.personality_report('\n'.join(self.logs)):
-            personality_reports[self.lenlog[-1]].update({personality: percentage})
+            self.axes[personality].append(percentage)
 
-        self.personality_data.update(personality_reports)
-
-        tone_reports = {self.lenlog[-1]: {}}
         for tone_id, score in self.tone_report('\n'.join(self.logs)):
-            tone_reports[self.lenlog[-1]].update({tone_id: score})
-
-        self.tone_data.update(tone_reports)
+            self.axes[tone_id].append(score)
 
     def personality_report(self, text, tree=None):
         """
@@ -182,19 +175,6 @@ class LogParser:
         # Return highest magnitude of either tone or personality implied through the statement
         self.reaction = sorted(reaction, key=lambda t: t[1], reverse=True)
 
-    def axes(self):
-        """
-        returns the axes for matplotlib
-        :return: 
-        """
-        out = defaultdict(list)
-        for entry in self.tone_data:
-            out[entry[0]].append(entry[1])
-        for entry in self.personality_data:
-            out[entry[0]].append(entry[1])
-        out.update({'x': self.lenlog})
-
-        return out
 
 if __name__ == '__main__':
     main()
