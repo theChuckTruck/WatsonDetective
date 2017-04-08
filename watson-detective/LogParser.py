@@ -11,15 +11,22 @@ from watson_developer_cloud import PersonalityInsightsV2
 from datetime import datetime, timedelta
 import configparser
 from watson_developer_cloud import ToneAnalyzerV3
+from watson_developer_cloud.watson_developer_cloud_service import WatsonException
 
 
 def main():
     # print(os.listdir('.'))
     lp = LogParser('config.ini')
-
-    lp.add_log('Dude, what the hell?'*100)
-    lp.watson_report_cumulative()
+    list_of_logs = [
+        'Hey!', 'Howre you?', 'doing well', 'sorry about that', 'yeah, no way!'
+    ]
+    for log in list_of_logs:
+        lp.add_log(log)
+        lp.watson_report_cumulative()
     print(lp.axes)
+    # lp.add_log('Dude, what the hell?'*100)
+    # lp.watson_report_cumulative()
+    # print(lp.axes)
 
     # lp.single_reaction()
     #
@@ -62,7 +69,7 @@ class LogParser:
 
         self.logs = []
         self.lenlog = [len(self.logs)]
-        self.axes = defaultdict(lambda: [0] * len(self.lenlog))
+        self.axes = defaultdict(lambda: [0] * (len(self.logs) - 1))
         self.axes['x'] = self.lenlog
 
     def add_log(self, log):
@@ -83,8 +90,11 @@ class LogParser:
         :return: 
         """
         self.lenlog.append(len(self.logs))
-        for personality, percentage in self.personality_report('\n'.join(self.logs)):
-            self.axes[personality].append(percentage)
+        try:
+            for personality, percentage in self.personality_report('\n'.join(self.logs)):
+                self.axes[personality].append(percentage)
+        except WatsonException as e:
+            print("too short for personality scan")
 
         for tone_id, score in self.tone_report('\n'.join(self.logs)):
             self.axes[tone_id].append(score)
