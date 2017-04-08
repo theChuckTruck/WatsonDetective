@@ -4,23 +4,28 @@ The LogParser class stores message logs and cumulatively generates IBM Watson re
 
 import json
 from os.path import join, dirname
+import os
+from collections import defaultdict
+from watson_developer_cloud import TradeoffAnalyticsV1
 from watson_developer_cloud import PersonalityInsightsV2
 from datetime import datetime, timedelta
 import configparser
 from watson_developer_cloud import ToneAnalyzerV3
 
+
 def main():
-
-    cparser = configparser.ConfigParser()
-    cparser.read('config.ini')
-
+    # print(os.listdir('.'))
     lp = LogParser('config.ini')
 
-    lp.add_log('Dude, what the hell?')
-    lp.single_reaction()
+    lp.add_log('Dude, what the hell?'*100)
+    lp.watson_report_cumulative()
+    print(lp.axes())
 
-    print(lp.reaction)
+    # lp.single_reaction()
+    #
+    # print(lp.reaction)
 
+    # lp.decision(resource="foo")
 
 # personality_insights = PersonalityInsightsV2(
 #     username='4992907f-7c59-4405-953f-0fec302964f9',
@@ -39,16 +44,21 @@ class LogParser:
         :param str username: Service Credential username
         :param str password: Service Credential password
         """
-        initparser = configparser.ConfigParser()
-        initparser.read(path)
+        with open('./' + path, 'r') as f:
+            initparser = configparser.ConfigParser()
+            initparser.read_file(f)
+            initparser.keys()
 
         self.personality_client = PersonalityInsightsV2(
-            username=initparser['personality']['username'],
-            password=initparser['personality']['password'])
+            username=initparser['p']['username'],
+            password=initparser['p']['password'])
         self.tone_client = ToneAnalyzerV3(
             username=initparser['tone']['username'],
             password=initparser['tone']['password'],
             version="2016-02-11")
+        self.decision_client = TradeoffAnalyticsV1(
+            username=initparser['decision']['username'],
+            password=initparser['decision']['password'])
 
         self.logs = []
         self.personality_data = {}
@@ -136,6 +146,28 @@ class LogParser:
             else:
                 print("not list")
 
+    def decision(self, resource=None, filename=None):
+        """
+        Makes a decision with a standard JSON Tradeoff-Analytics input.
+        
+        If filename exists, searches that file path first for a .json file.
+        :param resource: the JSON itself, if not using filename
+        :param filename: the filename for json to open.
+        :return: 
+        """
+
+        # Assert that the user is giving us *something*.
+        assert resource or filename
+
+        # Testing only
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               '../problem.json')) as problem_json:
+            dilemma = self.decision_client.dilemmas(json.load(problem_json),
+                                                  generate_visualization=True,
+                                                  find_preferable_options=True)
+            print(json.dumps(dilemma, indent=2))
+
     def single_reaction(self):
         """
         Returns a report relative to the log that just happened.
@@ -150,6 +182,19 @@ class LogParser:
         # Return highest magnitude of either tone or personality implied through the statement
         self.reaction = sorted(reaction, key=lambda t: t[1], reverse=True)
 
+    def axes(self):
+        """
+        returns the axes for matplotlib
+        :return: 
+        """
+        out = defaultdict(list)
+        for entry in self.tone_data:
+            out[entry[0]].append(entry[1])
+        for entry in self.personality_data:
+            out[entry[0]].append(entry[1])
+        out.update({'x': self.lenlog})
+
+        return out
 
 if __name__ == '__main__':
     main()
